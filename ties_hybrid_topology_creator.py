@@ -113,7 +113,8 @@ def element_from_pdb_atom_name(atom_name, amino=False):
     return element
 
 
-def create_safe_atom_name_pdb(structure, output_pdb_name, amino=False, **kwargs):
+def create_safe_atom_name_pdb(structure, output_pdb_name, amino=False,
+                              **kwargs):
     """
     Rename the atoms in the input structure so that they are safe for Amber
     and RdKit usage. Output to a new PDB.
@@ -194,7 +195,7 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
 
     # Edit naming for initial molecule to be correctly readable by RDKit,
     # get appropriate name mappings and update ac and prep files accordingly
-    # Information on topology (RDKit) and structure (SasMol) stored in MolInfo object
+    # Info on topology (RDKit) and structure (SasMol) stored in MolInfo object
     (initial_mol_info,
      element_counter) = prepare_mol_for_matching(initial_prep_filename,
                                                  initial_ac_filename,
@@ -202,17 +203,18 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
                                                  output_dir,
                                                  amino=amino)
 
-    # Copy frcmod file to be saved with same basename as edited ac and prep files
-    initial_mol_info.frcmod_filename = os.path.join(output_dir,
-                                                    initial_mol_info.output_basename + '.frcmod')
+    # Copy frcmod file to be saved with same basename as new ac and prep files
+    frcmod_name = initial_mol_info.output_basename + '.frcmod'
+    initial_mol_info.frcmod_filename = os.path.join(output_dir, frcmod_name)
     shutil.copyfile(initial_frcmod_filename, initial_mol_info.frcmod_filename)
 
-    # Get the filenames of the three parameter files we need to describe the final molecule
+    # Get the filenames of 3 parameter files needed to describe final molecule
     (final_prep_filename,
      final_frcmod_filename,
      final_ac_filename) = get_param_files(final_dir)
 
-    # Edit naming as for initial molecule - counter means atom names unique across both
+    # Edit naming as for initial molecule
+    # Counter ensures atom names unique across both
     (final_mol_info,
      element_counter) = prepare_mol_for_matching(final_prep_filename,
                                                  final_ac_filename,
@@ -223,8 +225,8 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
                                                  amino=amino)
 
     # Copy frcmod file to be saved with same basename as edited ac and prep files
-    final_mol_info.frcmod_filename = os.path.join(output_dir,
-                                                  final_mol_info.output_basename + '.frcmod')
+    frcmod_name = final_mol_info.output_basename + '.frcmod'
+    final_mol_info.frcmod_filename = os.path.join(output_dir, frcmod_name)
     shutil.copyfile(final_frcmod_filename, final_mol_info.frcmod_filename)
 
     return initial_mol_info, final_mol_info
@@ -370,15 +372,25 @@ def prepare_structure_for_matching(prep_filename, pdb_filename,
 
     """
 
-    original_prep, original_structure = read_pdb_prep_pair(prep_filename, pdb_filename)
+    original_prep, original_structure = read_pdb_prep_pair(prep_filename,
+                                                           pdb_filename)
 
     if counter:
 
-        safe_struct, name_map, element_counter = create_safe_atom_name_pdb(original_structure, output_pdb, counter=counter,amino=amino)
+        (safe_struct,
+         name_map,
+         element_counter) = create_safe_atom_name_pdb(original_structure,
+                                                      output_pdb,
+                                                      counter=counter,
+                                                      amino=amino)
 
     else:
 
-        safe_struct, name_map, element_counter = create_safe_atom_name_pdb(original_structure, output_pdb, amino=amino)
+        (safe_struct,
+         name_map,
+         element_counter) = create_safe_atom_name_pdb(original_structure,
+                                                      output_pdb,
+                                                      amino=amino)
 
     rdkit_mol = Chem.MolFromPDBFile(output_pdb, removeHs=False)
 
@@ -466,7 +478,10 @@ def get_user_submatch(submatches, atom_info, q_diffs, q_max_atom_diffs):
 
     header_txt = "#\tq diff\tatom q diff\tatom list"
 
-    selected = get_user_selection('substructure match', option_list, header=header_txt, default=-1)
+    selected = get_user_selection('substructure match',
+                                  option_list,
+                                  header=header_txt,
+                                  default=-1)
 
     return selected
 
@@ -840,12 +855,14 @@ def get_submatches(mol, atom_info, match_idxs):
 
                     stop_idxs = [stop_idx]
 
-                    remove_selection = get_linked_to_remove(bridge_idx, atom_info,
-                                                            match_idxs, stop_idxs)
+                    remove_selection = get_linked_to_remove(bridge_idx,
+                                                            atom_info,
+                                                            match_idxs,
+                                                            stop_idxs)
 
                     remove_selection.sort()
 
-                    # Add unique options to the list for curremy starting bridge atom
+                    # Add unique options to the list for starting bridge atom
                     if ((len(remove_selection) < len(match_idxs) - 1) and
                         (remove_selection not in options[start_bridge_idx])):
 
@@ -978,8 +995,8 @@ def output_submatches_file(submatches, selected,
                            initial_info, final_info,
                            matched_idx_map, output_dir):
     """
-    Output a summary file detailing the possible submatches and the atomic charge
-    differences between the initial and final molecules
+    Output a summary file detailing the possible submatches and the atomic
+    charge differences between the initial and final molecules
 
     Args:
         submatches (list): List of lists of atom indices for each submatch
@@ -1147,7 +1164,8 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
             sys.exit(0)
 
 
-        # Get all potential sub-matches with complete rings (includes complete match)
+        # Get all potential sub-matches with complete rings
+        # (includes complete match)
         submatches = get_submatches(initial_mol_info.mol, initial_atom_info,
                                     initial_match_idxs)
 
@@ -1312,8 +1330,9 @@ def update_final_description(final_mol_info, initial_submatch_idxs,
 
 def calc_coor_com(struct, atom_names, frame=0):
     """
-    Calculate the coordinates and centre of mass of the selected atoms in struct.
-    Coordinates are returned in the order of the names in the input list.
+    Calculate the coordinates and centre of mass of the selected atoms in
+    struct. Coordinates are returned in the order of the names in the
+    input list.
 
     Args:
         struct (sasmol.SasMol: Molecular structure information
@@ -1442,7 +1461,10 @@ def write_charge_constraint_file(avg_charges, struct, atom_info, filename):
             if charge_diff > 0.5:
                 print("Charge difference > 0.5 (0:f) for atom {1:s}".format(charge_diff, atom_name))
 
-            print('CHARGE {0:.6f} {1:d} {2:s}'.format(avg_charge, idx + 1, atom_name), file=out_file)
+            print('CHARGE {0:.6f} {1:d} {2:s}'.format(avg_charge,
+                                                      idx + 1,
+                                                      atom_name),
+                  file=out_file)
 
     out_file.close()
 
@@ -2067,27 +2089,44 @@ def main():
 
         # Create combined lib
         hybrid_libname = os.path.join(output_dir, 'hybrid.lib')
-        # create_combined_amber_lib_file(initial_libname, final_libname, hybrid_libname,
-        #                                selected_submatch, matched_idx_map)
+
         create_combined_amber_lib_file(initial_libname, final_libname,
                                        hybrid_libname, common_atom_names,
                                        resname=output_resname)
 
         # Create combined frcmod
         hybrid_frcmodname = os.path.join(output_dir, 'hybrid.frcmod')
-        create_merged_frcmod(initial_mol_info.frcmod_filename, final_mol_info.frcmod_filename, hybrid_frcmodname)
+        create_merged_frcmod(initial_mol_info.frcmod_filename,
+                             final_mol_info.frcmod_filename,
+                             hybrid_frcmodname)
 
         # Test hybrid ligand
         test_hybrid_library(output_dir)
 
         # Generate disappearing/appearing atom lists
-        disappearing_atoms_filename = os.path.join(output_dir, 'disappearing_atoms.txt')
-        output_non_common_atom_names(initial_mol_info.struct, common_atom_names, disappearing_atoms_filename)
-        output_ties_input_files(initial_mol_info.struct, common_atom_names, output_dir, role='initial')
+        disappearing_atoms_filename = os.path.join(output_dir,
+                                                   'disappearing_atoms.txt')
 
-        appearing_atoms_filename = os.path.join(output_dir, 'appearing_atoms.txt')
-        output_non_common_atom_names(final_mol_info.struct, common_atom_names, appearing_atoms_filename)
-        output_ties_input_files(final_mol_info.struct, common_atom_names, output_dir, role='final')
+        output_non_common_atom_names(initial_mol_info.struct,
+                                     common_atom_names,
+                                     disappearing_atoms_filename)
+
+        output_ties_input_files(initial_mol_info.struct,
+                                common_atom_names,
+                                output_dir,
+                                role='initial')
+
+        appearing_atoms_filename = os.path.join(output_dir,
+                                                'appearing_atoms.txt')
+
+        output_non_common_atom_names(final_mol_info.struct,
+                                     common_atom_names,
+                                     appearing_atoms_filename)
+
+        output_ties_input_files(final_mol_info.struct,
+                                common_atom_names,
+                                output_dir,
+                                role='final')
 
     return
 
