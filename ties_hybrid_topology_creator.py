@@ -1222,8 +1222,7 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
             print("No matching region (excluding incomplete rings) could be identified!")
             sys.exit(0)
 
-
-
+        check_atom_type_match(matched_idx_map, initial_mol_info, final_mol_info)
 
         # Get all potential sub-matches with complete rings
         # (includes complete match)
@@ -1850,21 +1849,69 @@ quit
     print(test_system_build_template, file=leap_in_file)
     leap_in_file.close()
 
-    returncode = subprocess.call(['tleap', '-s', '-f', leap_in_filename])
+    output = subprocess.check_output(['tleap', '-s', '-f', leap_in_filename], stderr=subprocess.STDOUT)
 
-    if returncode:
-        print('ERROR: Test of the hybrid topology failed')
-        sys.exit(1)
+    missing_angles = []
+    missing_dihedrals = []
 
-    returncode = subprocess.call(['parmchk',
-                                  '-i', 'test.prepc',
-                                  '-f', 'prepc', '-o', 'test.frcmod'])
+    for line in output.splitlines():
 
-    if returncode:
-        print('ERROR: Unable to run parmchk on test.prepc')
-        sys.exit(1)
+        if "Could not find angle parameter:" in line:
+
+            cols = line.split(':')
+            angle = cols[1]
+            if angle not in missing_angles:
+                missing_angles.append(cols[1])
+
+        elif "No torsion terms for" in line :
+            torsion = line[26:-1]
+            if torsion not in missing_dihedrals:
+                missing_dihedrals.append(torsion)
+
+    if missing_angles or missing_dihedrals:
+
+        print('WARNING: Adding default values for missing dihedral to frcmod')
+        print('WARNING: Okay unless there are atom type changes in match')
+
+        old_frcmod = open('hybrid.frcmod')
+        frcmod_lines = old_frcmod.readlines()
+        old_frcmod.close()
+
+        new_frcmod = open('hybrid.frcmod','w')
+
+        for line in frcmod_lines:
+
+            new_frcmod.write(line)
+
+            if 'ANGLE' in line:
+                for angle in missing_angles:
+                    new_frcmod.write('{:<13}48.460     120.010   same as ca-ca-ha\n'.format(angle))
+
+            if 'DIHE' in line:
+                for angle in missing_dihedrals:
+                    new_frcmod.write('{:<14}1    0.700       180.000           2.000      same as X -c2-ca-X\n'.format(angle))
+
+        returncode = subprocess.call(['tleap', '-s', '-f', leap_in_filename])
+
+        if returncode:
+            print('ERROR: Test of the hybrid topology failed')
+            sys.exit(1)
+
+    if not os.path.exists('test.top'):
+
+        print('ERROR: Unable to create test.top, running parmchk')
+
+        returncode = subprocess.call(['parmchk',
+                                      '-i', 'test.prepc',
+                                      '-f', 'prepc', '-o', 'missing.frcmod'])
+
+        if returncode:
+            print('ERROR: Unable to run parmchk on test.prepc')
+            sys.exit(1)
 
     os.chdir(start_dir)
+
+    print('\nHybrid topology created correctly')
 
     return
 
