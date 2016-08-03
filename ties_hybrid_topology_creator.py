@@ -1775,6 +1775,7 @@ source leaprc.gaff
 frcmod = loadamberparams hybrid.frcmod
 loadoff hybrid.lib
 hybrid = loadpdb hybrid.pdb
+saveamberprep hybrid test.prepc
 saveamberparm hybrid test.top test.crd
 savepdb hybrid test.pdb
 quit
