@@ -1757,7 +1757,8 @@ def create_combined_amber_lib_file(initial_lib_filename, final_lib_filename,
 
 def test_hybrid_library(output_dir):
     """
-    Check that the output library can be used to create a valid amber topology
+    Check that the output library can be used to create a valid amber topology.
+    Also convert to prepc format anc heck with parmchk
 
     Args:
         output_dir (str): Path to directory holding output files
@@ -1790,11 +1791,19 @@ quit
 
     returncode = subprocess.call(['tleap', '-s', '-f', leap_in_filename])
 
-    os.chdir(start_dir)
-
     if returncode:
         print('ERROR: Test of the hybrid topology failed')
         sys.exit(1)
+
+    returncode = subprocess.call(['parmchk',
+                                  '-i', 'test.prepc',
+                                  '-f', 'prepc', '-o', 'test.frcmod'])
+
+    if returncode:
+        print('ERROR: Unable to run parmchk on test.prepc')
+        sys.exit(1)
+
+    os.chdir(start_dir)
 
     return
 
