@@ -62,7 +62,7 @@ class MolInfo():
 
         return
 
-def element_from_pdb_atom_name(atom_name):
+def element_from_pdb_atom_name(atom_name, amino=False):
     """
     Try to extract the element name from the atom name provided (from a PDB)
 
@@ -86,8 +86,11 @@ def element_from_pdb_atom_name(atom_name):
     # Mostly will not be so, assume CA is what is actually meant
     elif name_element == 'CA':
 
-        print('WARNING: CA atom name interpretted as Calcium\n')
-        element = name_element
+        if amino:
+            element = 'C'
+        else:
+            print('WARNING: CA atom name interpretted as Calcium\n')
+            element = name_element
 
     elif name_element == 'HN':
 
@@ -110,7 +113,7 @@ def element_from_pdb_atom_name(atom_name):
     return element
 
 
-def create_safe_atom_name_pdb(structure, output_pdb_name, **kwargs):
+def create_safe_atom_name_pdb(structure, output_pdb_name, amino=False, **kwargs):
     """
     Rename the atoms in the input structure so that they are safe for Amber
     and RdKit usage. Output to a new PDB.
@@ -146,7 +149,7 @@ def create_safe_atom_name_pdb(structure, output_pdb_name, **kwargs):
         # HACK: Derive element from atom name
         # SasMol doing this already but confused by multi-letter elements
         # This is a temporary correction
-        element = element_from_pdb_atom_name(original_names[idx])
+        element = element_from_pdb_atom_name(original_names[idx], amino=amino)
 
         element_count.update([element])
 
@@ -167,7 +170,7 @@ def create_safe_atom_name_pdb(structure, output_pdb_name, **kwargs):
 
 
 def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
-                 final_pdb_filename, output_dir):
+                 final_pdb_filename, output_dir, amino=False):
     """
 
     Args:
@@ -196,7 +199,8 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
      element_counter) = prepare_mol_for_matching(initial_prep_filename,
                                                  initial_ac_filename,
                                                  initial_pdb_filename,
-                                                 output_dir)
+                                                 output_dir,
+                                                 amino=amino)
 
     # Copy frcmod file to be saved with same basename as edited ac and prep files
     initial_mol_info.frcmod_filename = os.path.join(output_dir,
@@ -215,7 +219,8 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
                                                  final_pdb_filename,
                                                  output_dir,
                                                  counter=element_counter,
-                                                 prefix='final_')
+                                                 prefix='final_',
+                                                 amino=amino)
 
     # Copy frcmod file to be saved with same basename as edited ac and prep files
     final_mol_info.frcmod_filename = os.path.join(output_dir,
@@ -226,7 +231,8 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
 
 
 def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
-                             output_dir, counter=None, prefix='init_'):
+                             output_dir, counter=None, prefix='init_',
+                             amino=False):
     """
     RDKit makes particular requirements of PDBs to be read. Edit input files
     to accommodate this, output edited PDB and read this in to provide
@@ -268,7 +274,8 @@ def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
      element_counter) = prepare_structure_for_matching(prep_filename,
                                                        pdb_filename,
                                                        output_pdb,
-                                                       counter=counter)
+                                                       counter=counter,
+                                                       amino=amino)
 
     cwd = os.getcwd()
 
@@ -337,7 +344,8 @@ def prepare_param_for_matching(ac_filename, naming_pdb_filename,
     return
 
 
-def prepare_structure_for_matching(prep_filename, pdb_filename, output_pdb, counter=None):
+def prepare_structure_for_matching(prep_filename, pdb_filename,
+                                   output_pdb, counter=None, amino=False):
     """
     Create an RdKit Mol object from the input structure. The atoms of the
     input structure are renamed to ensure they can be read by RdKit. The
@@ -366,11 +374,11 @@ def prepare_structure_for_matching(prep_filename, pdb_filename, output_pdb, coun
 
     if counter:
 
-        safe_struct, name_map, element_counter = create_safe_atom_name_pdb(original_structure, output_pdb, counter=counter)
+        safe_struct, name_map, element_counter = create_safe_atom_name_pdb(original_structure, output_pdb, counter=counter,amino=amino)
 
     else:
 
-        safe_struct, name_map, element_counter = create_safe_atom_name_pdb(original_structure, output_pdb)
+        safe_struct, name_map, element_counter = create_safe_atom_name_pdb(original_structure, output_pdb, amino=amino)
 
     rdkit_mol = Chem.MolFromPDBFile(output_pdb, removeHs=False)
 
@@ -1052,7 +1060,8 @@ def output_submatches_file(submatches, selected,
 
 
 def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
-                    output_dir, manual, tolerance=0.1, atom_tolerance=0.1):
+                    output_dir, manual, tolerance=0.1, atom_tolerance=0.1,
+                    amino=False):
     """
     Compare ligands and select a matching region from both that will be
     used as the common region when building the final hybrid ligand.
@@ -1089,7 +1098,7 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
     # RDKit requires atom name changes, update input files & move to output_dir
     initial_mol_info, final_mol_info = prepare_mols(initial_dir, final_dir,
                                                     initial_pdb, final_pdb,
-                                                    output_dir)
+                                                    output_dir, amino=amino)
 
     # Map charges from resp ac file to atom names and indexes
     initial_charge_map = create_charge_idx_map(initial_mol_info.ac_filename,
@@ -1956,6 +1965,11 @@ def parse_commandline_options():
         action='store_true',
         help='Flag to select deletion of directory to be created by the script before execution')
 
+    parser.add_argument(
+        '--amino',
+        action='store_true',
+        help='Flag to show that it should be assumed that the input is amino acid-like')
+
     args = parser.parse_args()
 
     return args
@@ -1983,6 +1997,7 @@ def main():
     align = not args.noalign
     output_resname = args.resname
     delete_old = args.delete_old
+    amino = args.amino
 
     prepare_output_dir(args.output, delete_old)
 
@@ -1997,7 +2012,9 @@ def main():
      selected_submatch) = compare_ligands(initial_dir, initial_pdb,
                                           final_dir, final_pdb,
                                           output_dir, manual,
-                                          tolerance=q_tol, atom_tolerance=q_atom_tol)
+                                          tolerance=q_tol,
+                                          atom_tolerance=q_atom_tol,
+                                          amino=amino)
 
     if args.task == 'all':
 
