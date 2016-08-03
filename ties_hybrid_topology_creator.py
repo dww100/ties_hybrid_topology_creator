@@ -35,6 +35,7 @@ class MolInfo():
      Attributes:
         mol (rdkit.Chem.rdchem.Mol):
         struct (sasmol,SasMol):
+        atom_types (dict):
         output_basename (str):
         ac_filename (str):
         prep_filename (str):
@@ -52,6 +53,7 @@ class MolInfo():
 
         self.mol = None
         self.struct = None
+        self.atom_types = {}
         self.output_basename = ''
         self.ac_filename = ''
         self.prep_filename = ''
@@ -273,7 +275,8 @@ def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
     (rdkit_mol,
      safe_struct,
      name_map,
-     element_counter) = prepare_structure_for_matching(prep_filename,
+     element_counter,
+     atom_types) = prepare_structure_for_matching(prep_filename,
                                                        pdb_filename,
                                                        output_pdb,
                                                        counter=counter,
@@ -299,6 +302,8 @@ def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
 
     mol_info.mol = rdkit_mol
     mol_info.struct = safe_struct
+
+    mol_info.atom_types = atom_types
 
     mol_info.map_names_to_old_pdb = name_map
     mol_info.output_basename = output_basename
@@ -369,11 +374,19 @@ def prepare_structure_for_matching(prep_filename, pdb_filename,
         rdkit.Chem.rdchem.Mol: Contains molecule atoms and connections
         sasmol.SasMol: Structure containing renamed atoms
         dict: Map between input and output atom names
+        collections.Counter: Updated element counts
+        dict: Index to atom type mapping
 
     """
 
-    original_prep, original_structure = read_pdb_prep_pair(prep_filename,
-                                                           pdb_filename)
+    prep, original_structure = read_pdb_prep_pair(prep_filename, pdb_filename)
+
+    atom_names = original_structure.name()
+
+    atom_types = {}
+    for idx in range(original_structure.natoms()):
+        atom_name = atom_names[idx]
+        atom_types[idx] = prep.atom_type_from_name[atom_name]
 
     if counter:
 
@@ -394,7 +407,7 @@ def prepare_structure_for_matching(prep_filename, pdb_filename,
 
     rdkit_mol = Chem.MolFromPDBFile(output_pdb, removeHs=False)
 
-    return rdkit_mol, safe_struct, name_map, element_counter
+    return rdkit_mol, safe_struct, name_map, element_counter, atom_types
 
 
 def get_user_selection(text, option_list, header='', default=0):
@@ -1076,6 +1089,52 @@ def output_submatches_file(submatches, selected,
     return
 
 
+def check_atom_type_match(matched_idx_map, initial_mol_info, final_mol_info):
+    """
+    Check atom types for matched atoms are the same in both molecules. If not
+    the same report to user and ask if they wish to continue and ends if not.
+
+    Args:
+        matched_idx_map (dict): Map index for initial molecule to index of the
+                                corresponding atom in the final molecule
+        initial_mol_info (MolInfo()): Structure, name and type information for
+                                      the initial molecule
+        final_mol_info (MolInfo()): Structure, name and type information for
+                                    the final molecule
+
+    Returns:
+
+    """
+
+    init_names = initial_mol_info.struct.name()
+    final_names = final_mol_info.struct.name()
+
+    type_match_error = False
+
+    for init_idx, final_idx in matched_idx_map.iteritems():
+
+        init_type = initial_mol_info.atom_types[init_idx]
+        final_type = final_mol_info.atom_types[final_idx]
+
+        if init_type != final_type:
+            init_name = init_names[init_idx]
+            final_name = final_names[final_idx]
+
+            print('WARNING: Matched atoms of different types: {0:s} ({1:s}) - {2:s} ({3:s})'.format(init_name,
+                                                                                                    init_type,
+                                                                                                    final_name,
+                                                                                                    final_type))
+            type_match_error = True
+
+    if type_match_error:
+
+        choice = input("Given type match error do you want to proceed (y/[n])?")
+        if choice.lower() != 'y':
+            sys.exit(1)
+
+    return
+
+
 def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
                     output_dir, manual, tolerance=0.1, atom_tolerance=0.1,
                     amino=False):
@@ -1162,6 +1221,8 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
         if len(initial_match_idxs) == 0:
             print("No matching region (excluding incomplete rings) could be identified!")
             sys.exit(0)
+
+
 
 
         # Get all potential sub-matches with complete rings
