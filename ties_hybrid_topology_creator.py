@@ -386,7 +386,11 @@ def prepare_structure_for_matching(prep_filename, pdb_filename,
     atom_types = {}
     for idx in range(original_structure.natoms()):
         atom_name = atom_names[idx]
-        atom_types[idx] = prep.atom_type_from_name[atom_name]
+        try:
+            atom_types[idx] = prep.atom_type_from_name[atom_name]
+        except:
+            test_name = atom_name[1:] + atom_name[0]
+            atom_types[idx] = prep.atom_type_from_name[test_name]
 
     if counter:
 
