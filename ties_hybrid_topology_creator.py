@@ -730,6 +730,51 @@ def get_bridge_atoms(mol, matched_idxs):
     return bridge_atoms
 
 
+def get_bridge_ring(ring_no, atom_rings, atom_info):
+
+    idxs_off_ring = []
+
+    seen_rings = [ring_no]
+    check_ring_atoms = atom_rings[ring_no]
+
+    while len(check_ring_atoms):
+
+        check_rings = []
+
+        for idx in check_ring_atoms:
+
+            bound = atom_info[idx].bound
+
+            for bound_idx in bound:
+
+                if bound_idx not in check_ring_atoms:
+
+                    if atom_info[bound_idx].rings:
+
+                        for new_ring in atom_info[idx].rings:
+
+                            if new_ring not in check_rings and new_ring not in seen_rings:
+
+                                check_rings.append(new_ring)
+
+                    else:
+
+                        idxs_off_ring.append(bound_idx)
+
+        new_check_atoms = []
+
+        for ring_idx in check_rings:
+            for idx in atom_rings[ring_idx]:
+                if idx not in check_ring_atoms:
+                    new_check_atoms.append(idx)
+
+        check_ring_atoms = new_check_atoms
+
+        seen_rings += check_rings
+
+    return idxs_off_ring
+
+
 def get_stop_ring_remove(idx, atom_info, atom_rings, matched):
     """
     Get indices of non-ring atoms connected to the ring containing the atom
@@ -752,25 +797,58 @@ def get_stop_ring_remove(idx, atom_info, atom_rings, matched):
 
     stop_idxs = []
 
-    # Start with the original atom being removed
-    start_info = atom_info[idx]
+    start_ring = atom_info[idx].rings[0]
 
-    # Get indices of all rings of which it is part
-    for ring_no in start_info.rings:
+    off_idxs = get_bridge_ring(start_ring, atom_rings, atom_info)
 
-        for atom_idx in atom_rings[ring_no]:
-
-            info = atom_info[atom_idx]
-
-            for bound_idx in info.bound:
-
-                if not atom_info[bound_idx].rings:
-
-                    if (bound_idx not in stop_idxs) and (bound_idx in matched):
-
-                        stop_idxs.append(bound_idx)
+    for off_idx in off_idxs:
+        if off_idx in matched:
+            stop_idxs.append(off_idx)
 
     return stop_idxs
+
+
+# def get_stop_ring_remove(idx, atom_info, atom_rings, matched):
+#     """
+#     Get indices of non-ring atoms connected to the ring containing the atom
+#     with index idx (or rings connected to that ring). These atoms are where
+#     removal of a ring from the matched region stops. Due to this goal only
+#     indices of matched atoms are reported.
+#
+#     Args:
+#         idx (int): Atom index for atom being removed
+#         atom_info (dict): Naming and connectivity (AtomInfo) information
+#                           by atom indexm
+#         atom_rings (list): List of lists of atom indices for all rings in
+#                            molecule
+#         matched (list): Atom indices for the macthed region of the molecule
+#
+#     Returns:
+#         list: indices of atoms where ring removal finishes
+#
+#     """
+#
+#     stop_idxs = []
+#
+#     # Start with the original atom being removed
+#     start_info = atom_info[idx]
+#
+#     # Get indices of all rings of which it is part
+#     for ring_no in start_info.rings:
+#
+#         for atom_idx in atom_rings[ring_no]:
+#
+#             info = atom_info[atom_idx]
+#
+#             for bound_idx in info.bound:
+#
+#                 if not atom_info[bound_idx].rings:
+#
+#                     if (bound_idx not in stop_idxs) and (bound_idx in matched):
+#
+#                         stop_idxs.append(bound_idx)
+#
+#     return stop_idxs
 
 
 def get_linked_to_remove(idx, atom_info, matched, stop_list):
