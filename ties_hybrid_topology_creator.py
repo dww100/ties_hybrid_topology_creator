@@ -1630,7 +1630,9 @@ def create_updated_prep_frcmod(src_dir, ac_filename,
 
     """
 
-    esp_filename = os.path.join(src_dir, 'ANTECHAMBER.ESP')
+    source_esp_filename = os.path.join(src_dir, 'ANTECHAMBER.ESP')
+    esp_filename = 'original_antrechamber.esp'
+    shutil.copyfile(source_esp_filename, esp_filename)
 
     returncode = 0
 
