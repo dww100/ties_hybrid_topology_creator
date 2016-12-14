@@ -28,6 +28,7 @@ from bac_ties.bac_atom_data import *
 
 input = raw_input
 
+
 class MolInfo():
     """
     Collects molecular information and associated filenames.
@@ -63,6 +64,7 @@ class MolInfo():
         self.map_names_to_old_pdb = {}
 
         return
+
 
 def element_from_pdb_atom_name(atom_name, amino=False):
     """
@@ -148,7 +150,6 @@ def create_safe_atom_name_pdb(structure, output_pdb_name, amino=False,
 
     # Rename atoms as XN where X = element and N = no. element counted
     for idx in range(structure.natoms()):
-
         # HACK: Derive element from atom name
         # SasMol doing this already but confused by multi-letter elements
         # This is a temporary correction
@@ -264,7 +265,7 @@ def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
 
     output_basename = prefix + os.path.splitext(pdb_basename)[0]
 
-    output_pdb = os.path.join(output_dir, output_basename+ '.pdb')
+    output_pdb = os.path.join(output_dir, output_basename + '.pdb')
     output_ac = os.path.join(output_dir, output_basename + '.ac')
     output_prep = os.path.join(output_dir, output_basename + '.prep')
 
@@ -277,10 +278,10 @@ def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
      name_map,
      element_counter,
      atom_types) = prepare_structure_for_matching(prep_filename,
-                                                       pdb_filename,
-                                                       output_pdb,
-                                                       counter=counter,
-                                                       amino=amino)
+                                                  pdb_filename,
+                                                  output_pdb,
+                                                  counter=counter,
+                                                  amino=amino)
 
     cwd = os.getcwd()
 
@@ -336,13 +337,14 @@ def prepare_param_for_matching(ac_filename, naming_pdb_filename,
                                   '-fa', 'pdb'])
 
     if returncode:
-        print('Antechamber error: Unable to convert {0:s} to naming from {1:s}'.format(ac_filename, naming_pdb_filename))
+        print(
+            'Antechamber error: Unable to convert {0:s} to naming from {1:s}'.format(ac_filename, naming_pdb_filename))
         sys.exit(1)
 
     returncode = subprocess.call(['antechamber', '-i', output_ac,
-                              '-fi', 'ac',
-                              '-o', output_prep,
-                              '-fo', 'prepi'])
+                                  '-fi', 'ac',
+                                  '-o', output_prep,
+                                  '-fo', 'prepi'])
 
     if returncode:
         print('Antechamber error: Unable to convert {0:s} to prep file'.format(output_ac))
@@ -486,7 +488,6 @@ def get_user_submatch(submatches, atom_info, q_diffs, q_max_atom_diffs):
     option_list = []
 
     for idx in range(len(submatches)):
-
         option = ','.join(atom_info[x].name for x in submatches[idx])
 
         option_list.append('{0:f}\t{1:f}\t{2:s}'.format(q_diffs[idx],
@@ -598,7 +599,6 @@ def remove_ring_error(mol, matched, atom_info=None):
 
     atom_rings = mol.GetRingInfo().AtomRings()
 
-
     all_ring_atoms = [x for sublist in atom_rings for x in sublist]
 
     updated_match = []
@@ -639,7 +639,6 @@ def remove_ring_error(mol, matched, atom_info=None):
                     for check_idx in range(len(disjoint_sections)):
 
                         if bound_idx in disjoint_sections[check_idx]:
-
                             section_idx = check_idx
                             break
 
@@ -726,12 +725,10 @@ def get_bridge_atoms(mol, matched_idxs):
 
                 bridge_atoms.append(end_idx)
 
-
     return bridge_atoms
 
 
 def get_bridge_ring(ring_no, atom_rings, atom_info):
-
     idxs_off_ring = []
 
     seen_rings = [ring_no]
@@ -754,7 +751,6 @@ def get_bridge_ring(ring_no, atom_rings, atom_info):
                         for new_ring in atom_info[idx].rings:
 
                             if new_ring not in check_rings and new_ring not in seen_rings:
-
                                 check_rings.append(new_ring)
 
                     else:
@@ -880,7 +876,6 @@ def get_linked_to_remove(idx, atom_info, matched, stop_list):
     for bonded_idx in atom.bound:
 
         if (bonded_idx in matched) and (bonded_idx not in stop_list):
-
             to_remove += get_linked_to_remove(bonded_idx, atom_info,
                                               matched, stop_list)
 
@@ -959,8 +954,7 @@ def get_submatches(mol, atom_info, match_idxs):
 
                     # Add unique options to the list for starting bridge atom
                     if ((len(remove_selection) < len(match_idxs) - 1) and
-                        (remove_selection not in options[start_bridge_idx])):
-
+                            (remove_selection not in options[start_bridge_idx])):
                         options[start_bridge_idx].append(remove_selection)
 
             # Record which bridge indices have already been evaluated
@@ -971,7 +965,6 @@ def get_submatches(mol, atom_info, match_idxs):
             bridge_idxs = []
 
             for option in options[start_bridge_idx]:
-
                 new_match = list(set(match_idxs) - set(option))
 
                 # Don't re-examine bridges that we have checked already
@@ -985,7 +978,7 @@ def get_submatches(mol, atom_info, match_idxs):
     # a) Create all possible combinations of section removals
     tmp = []
 
-    for comb_length in range(1, len(options)+1):
+    for comb_length in range(1, len(options) + 1):
 
         for combination in itertools.combinations(options, comb_length):
 
@@ -994,7 +987,6 @@ def get_submatches(mol, atom_info, match_idxs):
                 combined_removal_atoms = set([item for sublist in product for item in sublist])
 
                 if combined_removal_atoms not in tmp:
-
                     tmp.append(combined_removal_atoms)
 
     # Get a unique set of options (sorted to make comparisons easier later on)
@@ -1008,7 +1000,6 @@ def get_submatches(mol, atom_info, match_idxs):
             option.sort()
 
             if option not in full_options:
-
                 full_options.append(option)
 
     # c) Add full match to options (i.e. removal of no atoms from match)
@@ -1122,7 +1113,6 @@ def output_submatches_file(submatches, selected,
     print('#\tQ_diff\tAtom_Q_diff\tMatched atoms', file=out_file)
 
     for sub_no in range(len(submatches)):
-
         match = submatches[sub_no]
         option = ' '.join(initial_info[x].name for x in match)
 
@@ -1140,7 +1130,6 @@ def output_submatches_file(submatches, selected,
     print('Name_initial\tName_final\tQ_initial\tQ_final\tAtom_Q_diff', file=out_file)
 
     for idx1, idx2 in matched_idx_map.iteritems():
-
         name1 = initial_info[idx1].name
         name2 = final_info[idx2].name
         charge1 = initial_info[idx1].charge
@@ -1325,7 +1314,6 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
 
         else:
 
-
             all_options = range(len(submatches))
             filtered_q_total = [x for x in all_options if q_diffs[x] < tolerance]
             filtered_q_atom = [x for x in filtered_q_total if q_max_atom_diffs[x] < atom_tolerance]
@@ -1417,7 +1405,6 @@ def rename_common_atoms_final(final_struct, initial_submatch_idxs,
 
             new_names.append(current_names[idx])
 
-
     final_struct.setName(new_names)
 
     return
@@ -1487,7 +1474,6 @@ def calc_coor_com(struct, atom_names, frame=0):
 
     """
 
-
     formatted_atom_names = seg_list = ['"{0:s}"'.format(x) for x in atom_names]
     filter_txt = 'name[i] in [{0:s}]'.format(','.join(formatted_atom_names))
 
@@ -1503,7 +1489,6 @@ def calc_coor_com(struct, atom_names, frame=0):
     tmp_names = tmp_struct.name()
 
     for name in atom_names:
-
         idx = tmp_names.index(name)
 
         coor.append(tmp_coor[idx])
@@ -1560,7 +1545,6 @@ def calculate_average_charges(initial_atom_info, final_atom_info,
     average_charges = {}
 
     for initial_idx in submatch:
-
         atom_name = initial_atom_info[initial_idx].name
         final_idx = matched_idx_map[initial_idx]
 
@@ -1598,7 +1582,7 @@ def write_charge_constraint_file(avg_charges, struct, atom_info, filename):
             # idx use here is a bit dubious - but should work
             original_charge = atom_info[idx].charge
 
-            charge_diff = abs(avg_charge-original_charge)
+            charge_diff = abs(avg_charge - original_charge)
 
             if charge_diff > 0.5:
                 print("Charge difference > 0.5 (0:f) for atom {1:s}".format(charge_diff, atom_name))
@@ -1638,49 +1622,47 @@ def create_updated_prep_frcmod(src_dir, ac_filename,
 
     # Get input files for two stage resp fitting (using constraints)
     returncode += subprocess.call(['respgen', '-i', ac_filename,
-                                  '-o', mol_name + '.respin1',
-                                  '-f', 'resp1',
-                                  '-e', '1',
-                                  '-a', constraint_filename])
-
+                                   '-o', mol_name + '.respin1',
+                                   '-f', 'resp1',
+                                   '-e', '1',
+                                   '-a', constraint_filename])
 
     returncode += subprocess.call(['respgen', '-i', ac_filename,
-                                  '-o', mol_name + '.respin2',
-                                  '-f', 'resp2',
-                                  '-e', '1',
-                                  '-a', constraint_filename])
+                                   '-o', mol_name + '.respin2',
+                                   '-f', 'resp2',
+                                   '-e', '1',
+                                   '-a', constraint_filename])
 
     qin_filename = mol_name + '_QIN'
     os.rename('QIN', qin_filename)
 
     # Perform resp fitting
     returncode += subprocess.call(['resp', '-O', '-i', mol_name + '.respin1',
-                                  '-o', mol_name + '.respout1',
-                                  '-e', esp_filename,
-                                  '-t', mol_name + '_qout',
-                                  '-q', qin_filename])
+                                   '-o', mol_name + '.respout1',
+                                   '-e', esp_filename,
+                                   '-t', mol_name + '_qout',
+                                   '-q', qin_filename])
 
     returncode += subprocess.call(['resp', '-O', '-i', mol_name + '.respin2',
-                                  '-o', mol_name + '.respout2',
-                                  '-e', esp_filename,
-                                  '-t', mol_name + '_QOUT',
-                                  '-q', mol_name + '_qout'])
+                                   '-o', mol_name + '.respout2',
+                                   '-e', esp_filename,
+                                   '-t', mol_name + '_QOUT',
+                                   '-q', mol_name + '_qout'])
 
     # Convert resp output into ac file format
     returncode += subprocess.call(['antechamber', '-i', ac_filename,
-                                  '-fi', 'ac', '-c', 'rc',
-                                  '-cf', mol_name + '_QOUT',
-                                  '-o', mol_name + '.prep',
-                                  '-fo', 'prepi',
-                                  '-rn', mol_name.upper()])
+                                   '-fi', 'ac', '-c', 'rc',
+                                   '-cf', mol_name + '_QOUT',
+                                   '-o', mol_name + '.prep',
+                                   '-fo', 'prepi',
+                                   '-rn', mol_name.upper()])
 
     # Output missing force field parameters in frcmod format
     returncode += subprocess.call(['parmchk', '-i', mol_name + '.prep',
-                                  '-f', 'prepi',
-                                  '-o', mol_name + '.frcmod'])
+                                   '-f', 'prepi',
+                                   '-o', mol_name + '.frcmod'])
 
     if returncode:
-
         print('ERROR: Failed to create updated topology files')
         print('Source ESP: {0:s}'.format(esp_filename))
         print('Source AC: {0:s}'.format(ac_filename))
@@ -1714,11 +1696,10 @@ def update_topology_for_combining(average_charges, mol_info, atom_info,
 
     """
 
-
     struct = mol_info.struct
     ac_filename = mol_info.ac_filename
 
-    top_output_dir = os.path.join(output_dir, role+'_top')
+    top_output_dir = os.path.join(output_dir, role + '_top')
     os.makedirs(top_output_dir)
 
     start_dir = os.getcwd()
@@ -1772,7 +1753,7 @@ quit
     # Write tleap command to input file
     tleap_script = prep_to_lib_template.format(mol_name, mol_name.upper())
 
-    leap_in_filename = mol_name+'.leapin'
+    leap_in_filename = mol_name + '.leapin'
 
     leap_in_file = open(leap_in_filename, 'w')
     print(tleap_script, file=leap_in_file)
@@ -1833,9 +1814,9 @@ def create_combined_structure(initial_struct, final_struct,
 
     # Tidy up the residue naming, etc. of the combined ligand
     natoms_combined = combined_structure.natoms()
-    combined_structure.setResname([resname]*natoms_combined)
-    combined_structure.setChain(['X']*natoms_combined)
-    combined_structure.setSegname(['X']* natoms_combined)
+    combined_structure.setResname([resname] * natoms_combined)
+    combined_structure.setChain(['X'] * natoms_combined)
+    combined_structure.setSegname(['X'] * natoms_combined)
 
     return combined_structure
 
@@ -1874,7 +1855,6 @@ def create_combined_amber_lib_file(initial_lib_filename, final_lib_filename,
 
         if atom['name'] in common_atom_names:
             initial_lib_match_idx_map[atom['name']] = atom['index']
-
 
     n_atoms_original = len(initial_lib_info['atom'])
 
@@ -1947,7 +1927,7 @@ quit
             if angle not in missing_angles:
                 missing_angles.append(cols[1])
 
-        elif "No torsion terms for" in line :
+        elif "No torsion terms for" in line:
             torsion = line[26:-1]
             if torsion not in missing_dihedrals:
                 missing_dihedrals.append(torsion)
@@ -1961,7 +1941,7 @@ quit
         frcmod_lines = old_frcmod.readlines()
         old_frcmod.close()
 
-        new_frcmod = open('hybrid.frcmod','w')
+        new_frcmod = open('hybrid.frcmod', 'w')
 
         for line in frcmod_lines:
 
@@ -1973,7 +1953,8 @@ quit
 
             if 'DIHE' in line:
                 for angle in missing_dihedrals:
-                    new_frcmod.write('{:<14}1    0.700       180.000           2.000      same as X -c2-ca-X\n'.format(angle))
+                    new_frcmod.write(
+                        '{:<14}1    0.700       180.000           2.000      same as X -c2-ca-X\n'.format(angle))
 
         returncode = subprocess.call(['tleap', '-s', '-f', leap_in_filename])
 
