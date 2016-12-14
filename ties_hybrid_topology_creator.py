@@ -6,7 +6,8 @@ Elements of the initial molecule 'disappear' whilst those of the final 'appear'
 """
 from __future__ import print_function
 
-import sys, os
+import sys
+import os
 import subprocess
 import argparse
 import shutil
@@ -112,7 +113,8 @@ def element_from_pdb_atom_name(atom_name, amino=False):
         element = 'C'
 
     else:
-        raise Exception('Unable to determine element for atom {0:s}'.format(atom_name))
+        raise Exception(
+            'Unable to determine element for atom {0:s}'.format(atom_name))
 
     return element
 
@@ -227,7 +229,8 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
                                                  prefix='final_',
                                                  amino=amino)
 
-    # Copy frcmod file to be saved with same basename as edited ac and prep files
+    # Copy frcmod file to be saved with same basename as edited ac and prep
+    # files
     frcmod_name = final_mol_info.output_basename + '.frcmod'
     final_mol_info.frcmod_filename = os.path.join(output_dir, frcmod_name)
     shutil.copyfile(final_frcmod_filename, final_mol_info.frcmod_filename)
@@ -338,7 +341,9 @@ def prepare_param_for_matching(ac_filename, naming_pdb_filename,
 
     if returncode:
         print(
-            'Antechamber error: Unable to convert {0:s} to naming from {1:s}'.format(ac_filename, naming_pdb_filename))
+            'Antechamber error: Unable to convert {0:s} to naming from {1:s}'.format(
+                ac_filename,
+                naming_pdb_filename))
         sys.exit(1)
 
     returncode = subprocess.call(['antechamber', '-i', output_ac,
@@ -347,7 +352,8 @@ def prepare_param_for_matching(ac_filename, naming_pdb_filename,
                                   '-fo', 'prepi'])
 
     if returncode:
-        print('Antechamber error: Unable to convert {0:s} to prep file'.format(output_ac))
+        print(
+            'Antechamber error: Unable to convert {0:s} to prep file'.format(output_ac))
         sys.exit(1)
 
     return
@@ -632,7 +638,8 @@ def remove_ring_error(mol, matched, atom_info=None):
 
                 section_idx = None
 
-                bound_match = list(set(info.bound).intersection(set(updated_match)))
+                bound_match = list(
+                    set(info.bound).intersection(set(updated_match)))
 
                 for bound_idx in bound_match:
 
@@ -643,7 +650,7 @@ def remove_ring_error(mol, matched, atom_info=None):
                             break
 
                 # Add this atom and any bound to it to appropriate list
-                if section_idx == None:
+                if section_idx is None:
 
                     tmp = [idx]
                     tmp += bound_match
@@ -937,7 +944,8 @@ def get_submatches(mol, atom_info, match_idxs):
 
                 else:
 
-                    potential_stop_idxs = [x for x in bridge_info.bound if x in match_idxs]
+                    potential_stop_idxs = [
+                        x for x in bridge_info.bound if x in match_idxs]
 
                 # Get selections of atoms to remove for each potential section
                 # to be removed
@@ -945,12 +953,10 @@ def get_submatches(mol, atom_info, match_idxs):
 
                     stop_idxs = [stop_idx]
 
-                    remove_selection = get_linked_to_remove(bridge_idx,
-                                                            atom_info,
-                                                            match_idxs,
-                                                            stop_idxs)
-
-                    remove_selection.sort()
+                    remove_selection = sorted(get_linked_to_remove(bridge_idx,
+                                                                   atom_info,
+                                                                   match_idxs,
+                                                                   stop_idxs))
 
                     # Add unique options to the list for starting bridge atom
                     if ((len(remove_selection) < len(match_idxs) - 1) and
@@ -968,7 +974,9 @@ def get_submatches(mol, atom_info, match_idxs):
                 new_match = list(set(match_idxs) - set(option))
 
                 # Don't re-examine bridges that we have checked already
-                bridge_idxs += [x for x in get_bridge_atoms(mol, new_match) if x not in trial_bridges]
+                bridge_idxs += [
+                    x for x in get_bridge_atoms(
+                        mol, new_match) if x not in trial_bridges]
 
             if len(set(bridge_idxs)) < 1:
                 break
@@ -984,7 +992,8 @@ def get_submatches(mol, atom_info, match_idxs):
 
             for product in itertools.product(*combination):
 
-                combined_removal_atoms = set([item for sublist in product for item in sublist])
+                combined_removal_atoms = set(
+                    [item for sublist in product for item in sublist])
 
                 if combined_removal_atoms not in tmp:
                     tmp.append(combined_removal_atoms)
@@ -1012,9 +1021,7 @@ def get_submatches(mol, atom_info, match_idxs):
 
     for removal_list in full_options:
 
-        submatch = list(set(match_idxs) - set(removal_list))
-
-        submatch.sort()
+        submatch = sorted(set(match_idxs) - set(removal_list))
 
         if submatch:
             submatches.append(submatch)
@@ -1151,7 +1158,8 @@ def output_submatches_file(submatches, selected,
 
     print('\nUnmatched atoms from final:', file=out_file)
 
-    unmatched_idxs = [final_info[x].name for x in final_info.keys() if x not in matched_idx_map.keys()]
+    unmatched_idxs = [final_info[x].name for x in final_info.keys(
+    ) if x not in matched_idx_map.keys()]
     unmatched_txt = ' '.join(unmatched_idxs)
     print(unmatched_txt, file=out_file)
 
@@ -1191,15 +1199,18 @@ def check_atom_type_match(matched_idx_map, initial_mol_info, final_mol_info):
             init_name = init_names[init_idx]
             final_name = final_names[final_idx]
 
-            print('WARNING: Matched atoms of different types: {0:s} ({1:s}) - {2:s} ({3:s})'.format(init_name,
-                                                                                                    init_type,
-                                                                                                    final_name,
-                                                                                                    final_type))
+            print(
+                'WARNING: Matched atoms of different types: {0:s} ({1:s}) - {2:s} ({3:s})'.format(
+                    init_name,
+                    init_type,
+                    final_name,
+                    final_type))
             type_match_error = True
 
     if type_match_error:
 
-        choice = input("Given type match error do you want to proceed (y/[n])?")
+        choice = input(
+            "Given type match error do you want to proceed (y/[n])?")
         if choice.lower() != 'y':
             sys.exit(1)
 
@@ -1293,7 +1304,10 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
             print("No matching region (excluding incomplete rings) could be identified!")
             sys.exit(0)
 
-        check_atom_type_match(matched_idx_map, initial_mol_info, final_mol_info)
+        check_atom_type_match(
+            matched_idx_map,
+            initial_mol_info,
+            final_mol_info)
 
         # Get all potential sub-matches with complete rings
         # (includes complete match)
@@ -1315,8 +1329,10 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
         else:
 
             all_options = range(len(submatches))
-            filtered_q_total = [x for x in all_options if q_diffs[x] < tolerance]
-            filtered_q_atom = [x for x in filtered_q_total if q_max_atom_diffs[x] < atom_tolerance]
+            filtered_q_total = [
+                x for x in all_options if q_diffs[x] < tolerance]
+            filtered_q_atom = [
+                x for x in filtered_q_total if q_max_atom_diffs[x] < atom_tolerance]
 
             all_filtered_matches = []
 
@@ -1330,7 +1346,8 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
 
                     for idx in submatch:
 
-                        if initial_atom_info[idx].name.strip('0123456789') != 'H':
+                        if initial_atom_info[idx].name.strip(
+                                '0123456789') != 'H':
                             no_heavy += 1
 
                     if no_heavy > 1:
@@ -1342,7 +1359,8 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
 
                 else:
 
-                    print('Warning: Only acceptable matches with at most 1 heavy atom found')
+                    print(
+                        'Warning: Only acceptable matches with at most 1 heavy atom found')
                     selected_idx = filtered_q_atom[0]
 
             else:
@@ -1365,8 +1383,13 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
                            initial_atom_info, final_atom_info,
                            matched_idx_map, output_dir)
 
-    return (initial_mol_info, initial_atom_info,
-            final_mol_info, final_atom_info, matched_idx_map, selected_submatch)
+    return (
+        initial_mol_info,
+        initial_atom_info,
+        final_mol_info,
+        final_atom_info,
+        matched_idx_map,
+        selected_submatch)
 
 
 def rename_common_atoms_final(final_struct, initial_submatch_idxs,
@@ -1585,7 +1608,9 @@ def write_charge_constraint_file(avg_charges, struct, atom_info, filename):
             charge_diff = abs(avg_charge - original_charge)
 
             if charge_diff > 0.5:
-                print("Charge difference > 0.5 (0:f) for atom {1:s}".format(charge_diff, atom_name))
+                print(
+                    "Charge difference > 0.5 (0:f) for atom {1:s}".format(
+                        charge_diff, atom_name))
 
             print('CHARGE {0:.6f} {1:d} {2:s}'.format(avg_charge,
                                                       idx + 1,
@@ -1792,8 +1817,10 @@ def create_combined_structure(initial_struct, final_struct,
     frame = 0
 
     # Create a sasmol style selection string for the matched/common atoms
-    formatted_atom_names = seg_list = ['"{0:s}"'.format(x) for x in common_names]
-    filter_txt = 'name[i] not in [{0:s}]'.format(','.join(formatted_atom_names))
+    formatted_atom_names = seg_list = [
+        '"{0:s}"'.format(x) for x in common_names]
+    filter_txt = 'name[i] not in [{0:s}]'.format(
+        ','.join(formatted_atom_names))
 
     # Select matched atoms in the final molecule and copy to new SasMol object
     err, mask = final_struct.get_subset_mask(filter_txt)
@@ -1913,7 +1940,8 @@ quit
     print(test_system_build_template, file=leap_in_file)
     leap_in_file.close()
 
-    output = subprocess.check_output(['tleap', '-s', '-f', leap_in_filename], stderr=subprocess.STDOUT)
+    output = subprocess.check_output(
+        ['tleap', '-s', '-f', leap_in_filename], stderr=subprocess.STDOUT)
 
     missing_angles = []
     missing_dihedrals = []
@@ -1949,7 +1977,8 @@ quit
 
             if 'ANGLE' in line:
                 for angle in missing_angles:
-                    new_frcmod.write('{:<13}48.460     120.010   same as ca-ca-ha\n'.format(angle))
+                    new_frcmod.write(
+                        '{:<13}48.460     120.010   same as ca-ca-ha\n'.format(angle))
 
             if 'DIHE' in line:
                 for angle in missing_dihedrals:
@@ -2003,7 +2032,8 @@ def prepare_output_dir(output_path, delete_old):
 
         else:
 
-            print("Path for output directory is an existing file: {0:s}".format(output_path))
+            print(
+                "Path for output directory is an existing file: {0:s}".format(output_path))
 
         if delete_old:
 
@@ -2025,7 +2055,10 @@ def prepare_output_dir(output_path, delete_old):
     return
 
 
-def output_non_common_atom_names(structure, common_atom_names, output_filename):
+def output_non_common_atom_names(
+        structure,
+        common_atom_names,
+        output_filename):
     """
     Write the names of the atoms not in the common atoms list to a file.
 
@@ -2145,7 +2178,8 @@ def parse_commandline_options():
         help='Charge difference tolerance for acceptable match substructure')
 
     parser.add_argument(
-        '-a', '--atol',
+        '-a',
+        '--atol',
         default=0.1,
         type=float,
         help='Charge difference tolerance for individual atoms in acceptable match substructure')
