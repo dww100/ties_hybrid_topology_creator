@@ -21,7 +21,6 @@ class AtomInfo():
     """
 
     def __init__(self):
-
         self.bound = []
         self.rings = []
         self.name = ''
@@ -146,7 +145,6 @@ def get_bond_list(mol):
     bond_list = []
 
     for bond in bonds:
-
         atm1 = bond.GetBeginAtom().GetIdx()
         atm2 = bond.GetEndAtom().GetIdx()
 
@@ -191,20 +189,17 @@ def get_atom_info_rdkit(mol, charge_map=None):
         info.name = info.rdkit_name.strip()
 
         if charge_map:
-
             info.charge = charge_map.atom_charges[info.name]
 
         for ring_no in range(len(rings)):
 
             if idx in rings[ring_no]:
-
                 info.rings.append(ring_no)
 
-    #  Create list of atoms bonded to each atom
+    # Create list of atoms bonded to each atom
     bond_list = get_bond_list(mol)
 
     for idx1, idx2 in bond_list:
-
         atom_info[idx1].bound.append(idx2)
         atom_info[idx2].bound.append(idx1)
 
@@ -212,13 +207,11 @@ def get_atom_info_rdkit(mol, charge_map=None):
 
 
 def create_charge_idx_map(ac_filename, structure):
-
     charge_map = PdbRdkitChargeMap()
 
     charge_map.atom_charges = get_resp_charge_per_atom_from_ac(ac_filename, structure)
 
     for idx in range(structure.natoms()):
-
         name = structure.name()[idx]
         pdb_idx = structure.index()[idx]
 

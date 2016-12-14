@@ -8,8 +8,8 @@ import sasmol.sasmol as sasmol
 
 from bac_txt_utils import *
 
-class AmberPrep():
 
+class AmberPrep():
     def __init__(self, filename=''):
 
         self.filename = filename
@@ -19,7 +19,6 @@ class AmberPrep():
         self.resname = ''
 
         if filename:
-
             self.read_prep(filename)
 
     def read_prep(self, filename):
@@ -77,7 +76,6 @@ class AmberPrep():
                     h_idx_link[atom_idx] = connection_idx
 
         for h_idx, connection_idx in h_idx_link.iteritems():
-
             h_name = idx_name_map[h_idx]
             connection_name = idx_name_map[connection_idx]
             self.h_links[h_name] = connection_name
@@ -121,7 +119,6 @@ def get_resp_charge_per_atom_from_ac(ac_filename, structure):
 
                 if remove_digits(atom_name).upper() != remove_digits(
                         structure_atom_names[idx]):
-
                     remove_digits(atom_name)
 
                     err_text = "Element mismatch between {0:s} and input PDB for atom {1:s}: {2:s} vs {3:s}".format(
@@ -216,7 +213,7 @@ def check_prep_structure_consistency(prep, structure):
         err = "ERROR: Atom number mismatch -" + file_text
 
     # Hydrogens can have odd issues with name changes in prep so don't compare
-    elif not (set(prep_names)-set(prep_h_names)).issubset(set(structure_names)):
+    elif not (set(prep_names) - set(prep_h_names)).issubset(set(structure_names)):
 
         err = "ERROR: Heavy atom mismatch -" + file_text
 
@@ -224,7 +221,6 @@ def check_prep_structure_consistency(prep, structure):
 
 
 def parse_amber_lib_file(filename):
-
     lib_info = {}
 
     sections = {'!!index array': 'ignore',
@@ -282,7 +278,6 @@ def parse_amber_lib_file(filename):
 
 
 def edit_final_lib_info(lib_info, last_dis_ndx, matched_name_to_original_idxs):
-
     appearing_count = 0
     new_index_map = {}
 
@@ -344,7 +339,6 @@ def edit_final_lib_info(lib_info, last_dis_ndx, matched_name_to_original_idxs):
 
 
 def write_amber_lib_from_info(lib_info, output_filename, ligname):
-
     n_atoms = len(lib_info['atom'])
 
     out_file = open(output_filename, 'w')
@@ -393,7 +387,7 @@ def write_amber_lib_from_info(lib_info, output_filename, ligname):
     out_file.write('!entry.{0:s}.unit.hierarchy table  str abovetype  '
                    'int abovex  str belowtype  int belowx\n'.format(ligname))
     out_file.write(' "U" 0 "R" 1\n')
-    for i in range(1, n_atoms+1):
+    for i in range(1, n_atoms + 1):
         out_file.write(' "R" 1 "A" {0:d}\n'.format(i))
 
     out_file.write('!entry.{0:s}.unit.name single str\n'.format(ligname))
@@ -429,7 +423,6 @@ def write_amber_lib_from_info(lib_info, output_filename, ligname):
 
 
 def parse_frcmod_sections(filename):
-
     frcmod_info = {}
     section = 'REMARK'
 
@@ -452,7 +445,6 @@ def parse_frcmod_sections(filename):
 
 
 def create_merged_frcmod(filename1, filename2, output_filename):
-
     frcmod_info1 = parse_frcmod_sections(filename1)
     frcmod_info2 = parse_frcmod_sections(filename2)
 
