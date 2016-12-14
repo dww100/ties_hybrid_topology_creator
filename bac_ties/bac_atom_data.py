@@ -6,6 +6,7 @@ from __future__ import print_function
 
 from bac_amber_utils import *
 
+
 class AtomInfo():
     """
     Maps charges to atoms using names, PDB index and RDKit index
@@ -50,7 +51,6 @@ class PdbRdkitChargeMap():
 
         return
 
-
     def charge_pdb_idx(self, idx):
         """
         Get charge for selected atom
@@ -65,7 +65,6 @@ class PdbRdkitChargeMap():
         name = self.pdb_idx_name_map[idx]
 
         return self.atom_charges[name]
-
 
     def charge_rdkit_idx(self, idx):
         """
@@ -82,8 +81,7 @@ class PdbRdkitChargeMap():
 
         return self.atom_charges[name]
 
-
-    def name_pdb_idx(self,idx):
+    def name_pdb_idx(self, idx):
         """
         Get name for selected atom
 
@@ -95,7 +93,6 @@ class PdbRdkitChargeMap():
         """
 
         return self.pdb_idx_name_map[idx]
-
 
     def name_rdkit_idx(self, idx):
         """
@@ -109,7 +106,6 @@ class PdbRdkitChargeMap():
         """
 
         return self.rdkit_idx_name_map[idx]
-
 
     def create_atom_charge_map(self, names, charges):
         """
@@ -126,12 +122,13 @@ class PdbRdkitChargeMap():
         """
 
         if len(names) == len(charges):
-            self.atom_charges = dict(zip(names,charges))
+            self.atom_charges = dict(zip(names, charges))
         else:
             err = "Passed lists are of different lengths"
             raise ValueError(err)
 
         return
+
 
 def get_bond_list(mol):
     """
@@ -153,7 +150,7 @@ def get_bond_list(mol):
         atm1 = bond.GetBeginAtom().GetIdx()
         atm2 = bond.GetEndAtom().GetIdx()
 
-        bond_list.append([atm1,atm2])
+        bond_list.append([atm1, atm2])
 
     return bond_list
 
@@ -169,7 +166,7 @@ def get_atom_info_rdkit(mol, charge_map=None):
         mol (rdkit.Chem.rdchem.Mol):  Information on atomic contents of molecule
 
     Kwargs:
-        charge_dict (PdbRdkitChargeMap):  Map of atom names and indices to charges
+        charge_map (PdbRdkitChargeMap):  Map of atom names and indices to charges
 
     Returns:
         dict:  keys = atom indices, values = AtomInfo describing atom
@@ -206,12 +203,13 @@ def get_atom_info_rdkit(mol, charge_map=None):
     #  Create list of atoms bonded to each atom
     bond_list = get_bond_list(mol)
 
-    for idx1,idx2 in bond_list:
+    for idx1, idx2 in bond_list:
 
         atom_info[idx1].bound.append(idx2)
         atom_info[idx2].bound.append(idx1)
 
     return atom_info
+
 
 def create_charge_idx_map(ac_filename, structure):
 
