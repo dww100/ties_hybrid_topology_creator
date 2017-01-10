@@ -1858,6 +1858,7 @@ def create_combined_structure(initial_struct, final_struct,
     # Tidy up the residue naming, etc. of the combined ligand
     natoms_combined = combined_structure.natoms()
     combined_structure.setResname([resname] * natoms_combined)
+    combined_structure.setResid([1] * natoms_combined)
     combined_structure.setChain(['X'] * natoms_combined)
     combined_structure.setSegname(['X'] * natoms_combined)
 
