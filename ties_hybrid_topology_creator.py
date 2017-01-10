@@ -152,7 +152,6 @@ def create_safe_atom_name_pdb(structure, output_pdb_name, amino=False,
 
     # Rename atoms as XN where X = element and N = no. element counted
     for idx in range(structure.natoms()):
-
         # HACK: Derive element from atom name
         # SasMol doing this already but confused by multi-letter elements
         # This is a temporary correction
@@ -495,7 +494,6 @@ def get_user_submatch(submatches, atom_info, q_diffs, q_max_atom_diffs):
     option_list = []
 
     for idx in range(len(submatches)):
-
         option = ','.join(atom_info[x].name for x in submatches[idx])
 
         option_list.append('{0:f}\t{1:f}\t{2:s}'.format(q_diffs[idx],
@@ -648,7 +646,6 @@ def remove_ring_error(mol, matched, atom_info=None):
                     for check_idx in range(len(disjoint_sections)):
 
                         if bound_idx in disjoint_sections[check_idx]:
-
                             section_idx = check_idx
                             break
 
@@ -739,7 +736,6 @@ def get_bridge_atoms(mol, matched_idxs):
 
 
 def get_bridge_ring(ring_no, atom_rings, atom_info):
-
     idxs_off_ring = []
 
     seen_rings = [ring_no]
@@ -762,7 +758,6 @@ def get_bridge_ring(ring_no, atom_rings, atom_info):
                         for new_ring in atom_info[idx].rings:
 
                             if new_ring not in check_rings and new_ring not in seen_rings:
-
                                 check_rings.append(new_ring)
 
                     else:
@@ -888,7 +883,6 @@ def get_linked_to_remove(idx, atom_info, matched, stop_list):
     for bonded_idx in atom.bound:
 
         if (bonded_idx in matched) and (bonded_idx not in stop_list):
-
             to_remove += get_linked_to_remove(bonded_idx, atom_info,
                                               matched, stop_list)
 
@@ -967,7 +961,7 @@ def get_submatches(mol, atom_info, match_idxs):
                     # Add unique options to the list for starting bridge atom
                     if ((len(remove_selection) < len(match_idxs) - 1) and
                             (remove_selection not in options[start_bridge_idx])):
-
+                        
                         options[start_bridge_idx].append(remove_selection)
 
             # Record which bridge indices have already been evaluated
@@ -978,7 +972,6 @@ def get_submatches(mol, atom_info, match_idxs):
             bridge_idxs = []
 
             for option in options[start_bridge_idx]:
-
                 new_match = list(set(match_idxs) - set(option))
 
                 # Don't re-examine bridges that we have checked already
@@ -1004,7 +997,6 @@ def get_submatches(mol, atom_info, match_idxs):
                     [item for sublist in product for item in sublist])
 
                 if combined_removal_atoms not in tmp:
-
                     tmp.append(combined_removal_atoms)
 
     # Get a unique set of options (sorted to make comparisons easier later on)
@@ -1018,7 +1010,6 @@ def get_submatches(mol, atom_info, match_idxs):
             option.sort()
 
             if option not in full_options:
-
                 full_options.append(option)
 
     # c) Add full match to options (i.e. removal of no atoms from match)
@@ -1130,7 +1121,6 @@ def output_submatches_file(submatches, selected,
     print('#\tQ_diff\tAtom_Q_diff\tMatched atoms', file=out_file)
 
     for sub_no in range(len(submatches)):
-
         match = submatches[sub_no]
         option = ' '.join(initial_info[x].name for x in match)
 
@@ -1148,7 +1138,6 @@ def output_submatches_file(submatches, selected,
     print('Name_initial\tName_final\tQ_initial\tQ_final\tAtom_Q_diff', file=out_file)
 
     for idx1, idx2 in matched_idx_map.iteritems():
-
         name1 = initial_info[idx1].name
         name2 = final_info[idx2].name
         charge1 = initial_info[idx1].charge
@@ -1525,7 +1514,6 @@ def calc_coor_com(struct, atom_names, frame=0):
     tmp_names = tmp_struct.name()
 
     for name in atom_names:
-
         idx = tmp_names.index(name)
 
         coor.append(tmp_coor[idx])
@@ -1582,7 +1570,6 @@ def calculate_average_charges(initial_atom_info, final_atom_info,
     average_charges = {}
 
     for initial_idx in submatch:
-
         atom_name = initial_atom_info[initial_idx].name
         final_idx = matched_idx_map[initial_idx]
 
@@ -1703,7 +1690,6 @@ def create_updated_prep_frcmod(src_dir, ac_filename,
                                    '-o', mol_name + '.frcmod'])
 
     if returncode:
-
         print('ERROR: Failed to create updated topology files')
         print('Source ESP: {0:s}'.format(esp_filename))
         print('Source AC: {0:s}'.format(ac_filename))

@@ -8,8 +8,8 @@ import sasmol.sasmol as sasmol
 
 from bac_txt_utils import *
 
-class AmberPrep():
 
+class AmberPrep():
     def __init__(self, filename=''):
 
         self.filename = filename
@@ -19,7 +19,6 @@ class AmberPrep():
         self.resname = ''
 
         if filename:
-
             self.read_prep(filename)
 
     def read_prep(self, filename):
@@ -77,7 +76,6 @@ class AmberPrep():
                     h_idx_link[atom_idx] = connection_idx
 
         for h_idx, connection_idx in h_idx_link.iteritems():
-
             h_name = idx_name_map[h_idx]
             connection_name = idx_name_map[connection_idx]
             self.h_links[h_name] = connection_name
@@ -121,7 +119,6 @@ def get_resp_charge_per_atom_from_ac(ac_filename, structure):
 
                 if remove_digits(atom_name).upper() != remove_digits(
                         structure_atom_names[idx]):
-
                     remove_digits(atom_name)
 
                     err_text = "Element mismatch between {0:s} and input PDB for atom {1:s}: {2:s} vs {3:s}".format(
@@ -186,6 +183,7 @@ def read_pdb_prep_pair(prep_filename, pdb_filename):
 
     return prep, structure
 
+
 def check_prep_structure_consistency(prep, structure):
     """
     Check if the library (prep) file and structure read from PDB contain
@@ -215,14 +213,14 @@ def check_prep_structure_consistency(prep, structure):
         err = "ERROR: Atom number mismatch -" + file_text
 
     # Hydrogens can have odd issues with name changes in prep so don't compare
-    elif not (set(prep_names)-set(prep_h_names)).issubset(set(structure_names)):
+    elif not (set(prep_names) - set(prep_h_names)).issubset(set(structure_names)):
 
         err = "ERROR: Heavy atom mismatch -" + file_text
 
     return err
 
-def parse_amber_lib_file(filename):
 
+def parse_amber_lib_file(filename):
     lib_info = {}
 
     sections = {'!!index array': 'ignore',
@@ -231,7 +229,7 @@ def parse_amber_lib_file(filename):
                 'unit.boundbox': 'ignore',
                 'unit.childsequence': 'ignore',
                 'unit.connect array': 'ignore',
-                'unit.connectivity table':'connectivity',
+                'unit.connectivity table': 'connectivity',
                 'unit.hierarchy table': 'ignore',
                 'unit.name single': 'ignore',
                 'unit.positions table': 'positions',
@@ -280,13 +278,12 @@ def parse_amber_lib_file(filename):
 
 
 def edit_final_lib_info(lib_info, last_dis_ndx, matched_name_to_original_idxs):
-
     appearing_count = 0
     new_index_map = {}
 
     edited_info = {'atom': [],
                    'connectivity': [],
-                   'positions':[]}
+                   'positions': []}
 
     lib_idx_name_map = {}
 
@@ -311,7 +308,6 @@ def edit_final_lib_info(lib_info, last_dis_ndx, matched_name_to_original_idxs):
         else:
 
             lib_idx_name_map[atom['index']] = atom['name']
-
 
     for bond in lib_info['connectivity']:
 
@@ -341,8 +337,8 @@ def edit_final_lib_info(lib_info, last_dis_ndx, matched_name_to_original_idxs):
 
     return edited_info
 
-def write_amber_lib_from_info(lib_info, output_filename,ligname):
 
+def write_amber_lib_from_info(lib_info, output_filename, ligname):
     n_atoms = len(lib_info['atom'])
 
     out_file = open(output_filename, 'w')
@@ -350,15 +346,18 @@ def write_amber_lib_from_info(lib_info, output_filename,ligname):
     out_file.write('!!index array str\n')
     out_file.write(' "{0:s}"\n'.format(ligname))
 
-    out_file.write('!entry.{0:s}.unit.atoms table  str name  str type  int typex  int resx  int flags  int seq  int elmnt  dbl chg\n'.format(ligname))
+    out_file.write('!entry.{0:s}.unit.atoms table  str name  str type  '
+                   'int typex  int resx  int flags  int seq  int elmnt  '
+                   'dbl chg\n'.format(ligname))
     for atom in lib_info['atom']:
         line_txt = ' "{0:s}" {1:s} {2:d} {3:s}\n'.format(atom['name'],
-                                                      atom['type_txt'],
-                                                      atom['index'],
-                                                      atom['property_txt'])
+                                                         atom['type_txt'],
+                                                         atom['index'],
+                                                         atom['property_txt'])
         out_file.write(line_txt)
 
-    out_file.write('!entry.{0:s}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg\n'.format(ligname))
+    out_file.write('!entry.{0:s}.unit.atomspertinfo table  str pname  '
+                   'str ptype  int ptypex  int pelmnt  dbl pchg\n'.format(ligname))
     for atom in lib_info['atom']:
         atom_type = atom['type_txt'].split()[0]
         line_txt = ' "{0:s}" {1:s} 0 -1 0.0\n'.format(atom['name'], atom_type)
@@ -385,9 +384,10 @@ def write_amber_lib_from_info(lib_info, output_filename,ligname):
                                              bond['ndx2'])
         out_file.write(line_txt)
 
-    out_file.write('!entry.{0:s}.unit.hierarchy table  str abovetype  int abovex  str belowtype  int belowx\n'.format(ligname))
+    out_file.write('!entry.{0:s}.unit.hierarchy table  str abovetype  '
+                   'int abovex  str belowtype  int belowx\n'.format(ligname))
     out_file.write(' "U" 0 "R" 1\n')
-    for i in range(1, n_atoms+1):
+    for i in range(1, n_atoms + 1):
         out_file.write(' "R" 1 "A" {0:d}\n'.format(i))
 
     out_file.write('!entry.{0:s}.unit.name single str\n'.format(ligname))
@@ -423,7 +423,6 @@ def write_amber_lib_from_info(lib_info, output_filename,ligname):
 
 
 def parse_frcmod_sections(filename):
-
     frcmod_info = {}
     section = 'REMARK'
 
@@ -433,7 +432,8 @@ def parse_frcmod_sections(filename):
 
             start_line = line[0:9].strip()
 
-            if start_line in ['MASS','BOND','IMPROPER', 'NONBON','ANGLE','DIHE']:
+            if start_line in ['MASS', 'BOND', 'IMPROPER',
+                              'NONBON', 'ANGLE', 'DIHE']:
                 section = start_line
                 frcmod_info[section] = []
 
@@ -445,15 +445,15 @@ def parse_frcmod_sections(filename):
 
 
 def create_merged_frcmod(filename1, filename2, output_filename):
-
     frcmod_info1 = parse_frcmod_sections(filename1)
     frcmod_info2 = parse_frcmod_sections(filename2)
 
-    output_file = open(output_filename,'w')
+    output_file = open(output_filename, 'w')
 
     output_file.write('merged frcmod\n')
 
-    for section in ['MASS','BOND','ANGLE','DIHE','IMPROPER','NONBON']:
+    for section in ['MASS', 'BOND', 'ANGLE',
+                    'DIHE', 'IMPROPER', 'NONBON']:
         section_lines = set(frcmod_info1[section] + frcmod_info2[section])
         output_file.write('{0:s}\n'.format(section))
         for line in section_lines:
