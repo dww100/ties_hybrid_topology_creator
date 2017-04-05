@@ -22,17 +22,15 @@ from collections import Counter
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
 
-import sasmol.sasmol as sasmol
+#from sasmol.sasmol import SasMol
 
 from bac_ties.bac_amber_utils import *
 from bac_ties.bac_atom_data import *
 
-input = raw_input
 
-
-class MolInfo():
+class MolInfo:
     """
-    Collects molecular information and associated filenames.
+    Collects molecular information and associated file names.
 
      Attributes:
         mol (rdkit.Chem.rdchem.Mol):
@@ -1503,7 +1501,7 @@ def calc_coor_com(struct, atom_names, frame=0):
     filter_txt = 'name[i] in [{0:s}]'.format(','.join(formatted_atom_names))
 
     err, mask = struct.get_subset_mask(filter_txt)
-    tmp_struct = sasmol.SasMol(0)
+    tmp_struct = SasMol(0)
     struct.copy_molecule_using_mask(tmp_struct, mask, frame)
 
     com = tmp_struct.calccom(frame)
@@ -1830,12 +1828,12 @@ def create_combined_structure(initial_struct, final_struct,
     if err:
         raise Exception(err)
 
-    tmp_struct = sasmol.SasMol(0)
+    tmp_struct = SasMol(0)
     final_struct.copy_molecule_using_mask(tmp_struct, mask, frame)
 
     # Combine the full ligand with disappearing atoms with just the appearing
     # atoms from the second ligand in a new SasMol object
-    combined_structure = sasmol.SasMol(0)
+    combined_structure = SasMol(0)
     error = combined_structure.merge_two_molecules(initial_struct, tmp_struct)
 
     if error:
