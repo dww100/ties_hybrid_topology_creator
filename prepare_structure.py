@@ -302,7 +302,7 @@ def prepare_param_for_matching(ac_filename, naming_pdb_filename,
     returncode = subprocess.call(['antechamber', '-i', output_ac,
                                   '-fi', 'ac',
                                   '-o', output_prep,
-                                  '-fo', 'prepi'], shell=True)
+                                  '-fo', 'prepi'])
 
     if returncode:
         print(
