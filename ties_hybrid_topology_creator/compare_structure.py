@@ -95,11 +95,8 @@ def compare_ligands(initial_dir, initial_pdb, final_dir, final_pdb,
         # is the same i.e. if a side chain is exchanged. If you are changing the whole
         # molecule, than this method is not applicable, so the system exits.
 
-        # At this point only a lower bound of number of matching atoms is set
-        # but a more meaningful ratio could be a good alternative.
-
-        if len(initial_match_idxs) <= 2:
-            print("No sufficiently large matching region (excluding incomplete rings) could be identified!")
+        if float(len(initial_match_idxs))/float(len(initial_mol_info.mol.GetAtoms())) < 0.3:
+            print("No sufficiently large matching region (excluding incomplete rings) could be identified!\nTerminating.")
             sys.exit(0)
 
         check_atom_type_match(
