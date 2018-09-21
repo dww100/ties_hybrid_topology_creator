@@ -51,7 +51,7 @@ class MolInfo:
 
 
 def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
-                 final_pdb_filename, output_dir, amino=False):
+                 final_pdb_filename, output_dir, atom_type, amino=False):
     """
 
     Args:
@@ -62,6 +62,7 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
         initial_pdb_filename (str): PDB file for initial molecule
         final_pdb_filename (str): PDB file for final molecule
         output_dir (str): Directory to save output files
+	atom_type (str): Amber atom type
         amino (bool): amino?
 
     Returns:
@@ -72,7 +73,7 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
     # Get file names of 3 parameter files needed to describe initial molecule
     (initial_prep_filename,
      initial_frcmod_filename,
-     initial_ac_filename) = get_param_files(initial_dir)
+     initial_ac_filename) = get_param_files(initial_dir, output_dir, atom_type)
 
     # Edit naming for initial molecule to be correctly readable by RDKit,
     # get appropriate name mappings and update ac and prep files accordingly
@@ -82,6 +83,7 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
                                                  initial_ac_filename,
                                                  initial_pdb_filename,
                                                  output_dir,
+						 atom_type,
                                                  amino=amino)
 
     # Copy frcmod file to be saved with same basename as new ac and prep files
@@ -92,7 +94,7 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
     # Get the filenames of 3 parameter files needed to describe final molecule
     (final_prep_filename,
      final_frcmod_filename,
-     final_ac_filename) = get_param_files(final_dir)
+     final_ac_filename) = get_param_files(final_dir, output_dir, atom_type)
 
     # Edit naming as for initial molecule
     # Counter ensures atom names unique across both
@@ -101,6 +103,7 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
                                                  final_ac_filename,
                                                  final_pdb_filename,
                                                  output_dir,
+						 atom_type,
                                                  counter=element_counter,
                                                  prefix='final_',
                                                  amino=amino)
@@ -114,7 +117,7 @@ def prepare_mols(initial_dir, final_dir, initial_pdb_filename,
     return initial_mol_info, final_mol_info
 
 
-def get_param_files(param_path):
+def get_param_files(param_path, output_dir, atom_type):
     """
     Find prep, frcmod and ac files in path provided. If multiple files found
     then give user the choice of which to use. These files provide the Amber
@@ -123,6 +126,8 @@ def get_param_files(param_path):
     Args:
         param_path (str): Path to search for the PDB containing atomic
                           coordinates and names
+        output_dir (str): Directory to save output files
+	atom_type (str): Amber atom type
 
     Returns:
         str: Path to prep file
@@ -136,8 +141,37 @@ def get_param_files(param_path):
 
     if not preps:
 
-        raise Exception(
-            "No ac file found in provided path: {0:s}".format(param_path))
+	print("No prep file found. Searching for mol2 file....")
+
+	mol2s = glob.glob(os.path.join(param_path, '*.mol2'))
+	
+	if not mol2s:
+
+	        raise Exception(
+        	    "No prep or mol2 file found in provided path: {0:s}".format(param_path))
+
+	elif len(mol2s) == 1:
+
+		mol2_filename = mol2s[0]
+
+	else:
+
+		option_no = get_user_selection("Amber library (mol2) file", mol2s)
+	        mol2_filename = mol2s[option_no]
+	
+	print("Amber library file found in mol2 format. Converting it to prep format...")
+	cols = mol2_filename.split('/')
+	prep_basename = cols[-1].strip()[:-5] + '.prep'
+	prep_filename = os.path.join(output_dir, prep_basename)
+#	prep_filename = mol2_filename.strip()[:-5] + '.prep'
+
+	returncode = subprocess.call(['antechamber', '-i', mol2_filename, '-fi', 'mol2',
+						'-o', prep_filename, '-fo', 'prepi',
+						'-at', atom_type, '-pf', 'y'])
+
+	if returncode:
+		print("ERROR: Unable to convert mol2 to prep!")
+		sys.exit(1)	
 
     elif len(preps) == 1:
 
@@ -152,8 +186,30 @@ def get_param_files(param_path):
 
     if not frcmods:
 
-        raise Exception(
-            "Unable to find an ac file in provided path: {0:s}".format(param_path))
+	print("No frcmod file found. Running parmchk to create one using the prep file...")
+	frcmod_filename = prep_filename.strip()[:-5] + '.frcmod'
+	
+	if atom_type == 'gaff':
+	   at = 1
+	else:
+	   at = 2
+
+	# Assuming that the user provided prep file is in prepi format!
+        returncode = subprocess.call(['parmchk2',
+                                      '-i', prep_filename,
+                                      '-f', 'prepi', '-o', frcmod_filename, '-s', str(at)])
+
+        if returncode:
+            returncode = subprocess.call(['parmchk2',
+               	                      '-i', prep_filename,
+                       	              '-f', 'prepc', '-o', frcmod_filename, '-s', str(at)])
+	    if returncode:
+	 	    print('ERROR: Unable to run parmchk on {0:s}'.format(prep_filename))
+        	    sys.exit(1)
+
+
+#        raise Exception(
+#            "Unable to find an frcmod file in provided path: {0:s}".format(param_path))
 
     elif len(frcmods) == 1:
 
@@ -171,8 +227,18 @@ def get_param_files(param_path):
 
     if not acs:
 
-        raise Exception(
-            "No ac file found in provided path: {0:s}".format(param_path))
+	print("No ac file found. Running antechamber to create one using the mol2 file...")
+	ac_filename = prep_filename.strip()[:-5] + '.ac'
+	returncode = subprocess.call(['antechamber', '-i', mol2_filename,
+				'-fi', 'mol2', '-o', ac_filename, '-fo', 'ac',
+				'-at', atom_type, '-pf', 'y'])
+
+	if returncode:
+            print('ERROR: Unable to create ac file using {0:s}'.format(mol2_filename))
+            sys.exit(1)
+
+#        raise Exception(
+#            "No ac file found in provided path: {0:s}".format(param_path))
 
     elif 'resp.ac' in acs:
 
@@ -192,7 +258,7 @@ def get_param_files(param_path):
 
 
 def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
-                             output_dir, counter=None, prefix='init_',
+                             output_dir, atom_type, counter=None, prefix='init_',
                              amino=False):
     """
     RDKit makes particular requirements of PDBs to be read. Edit input files
@@ -205,6 +271,7 @@ def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
                            information)
         pdb_filename (str): Input PDB filename
         output_dir (str): Path to output directory
+	atom_type (str): Amber atom type
         counter (collections.Counter): Number of each element encountered in
                                        previous molecule(s)
         prefix (str): Text to prepend to output filenames (.pdb, .prep and
@@ -244,7 +311,7 @@ def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
     os.chdir(os.path.join(output_dir, 'tmp'))
 
     # Rename atoms in resp and library files to agree with updated structure
-    prepare_param_for_matching(ac_filename, output_pdb, output_ac, output_prep)
+    prepare_param_for_matching(ac_filename, output_pdb, output_ac, output_prep, atom_type)
 
     os.chdir(cwd)
 
@@ -269,7 +336,7 @@ def prepare_mol_for_matching(prep_filename, ac_filename, pdb_filename,
 
 
 def prepare_param_for_matching(ac_filename, naming_pdb_filename,
-                               output_ac, output_prep):
+                               output_ac, output_prep, atom_type):
     """
     Update the input ac and prep files (containing resp charge and topology
     information respectively) to us the naming conventions in
@@ -280,6 +347,7 @@ def prepare_param_for_matching(ac_filename, naming_pdb_filename,
         naming_pdb_filename (str): Path to PDB file with updated atom naming
         output_ac (str): Path to use for output ac file
         output_prep (str): Path to use for output Amber library file
+	atom_type (str): Amber atom type
 
     Returns:
 
@@ -290,7 +358,7 @@ def prepare_param_for_matching(ac_filename, naming_pdb_filename,
                                   '-o', output_ac,
                                   '-ao', 'name',
                                   '-a', naming_pdb_filename,
-                                  '-fa', 'pdb'])
+                                  '-fa', 'pdb', '-at', atom_type])
 
     if returncode:
         print(
@@ -302,7 +370,7 @@ def prepare_param_for_matching(ac_filename, naming_pdb_filename,
     returncode = subprocess.call(['antechamber', '-i', output_ac,
                                   '-fi', 'ac',
                                   '-o', output_prep,
-                                  '-fo', 'prepi'])
+                                  '-fo', 'prepi', '-at', atom_type])
 
     if returncode:
         print(
