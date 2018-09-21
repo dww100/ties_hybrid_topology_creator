@@ -13,7 +13,6 @@ from hybrid_structure_creat import *
 from topology import update_topology_for_combining
 from output import *
 
-
 def parse_commandline_options():
     """
     Parse the commandline options and set some defaults
@@ -53,6 +52,18 @@ def parse_commandline_options():
         help='Path to directory into which to save output')
 
     parser.add_argument(
+        '-at', '--atom_type',
+	choices=['gaff', 'gaff2'],
+        default='gaff',
+        help='Atom type (gaff or gaff2) to be used to write the output parameters. Default is gaff.')
+
+    parser.add_argument(
+        '-c', '--charge',
+	choices=['resp', 'others'],
+        default='resp',
+        help='Method used to calculate atomic charges (RESP or any other). Default is resp.')
+
+    parser.add_argument(
         '-t', '--task',
         choices=['compare', 'all'],
         default='all',
@@ -62,19 +73,21 @@ def parse_commandline_options():
         '-q', '--qtol',
         default=0.1,
         type=float,
-        help='Charge difference tolerance for acceptable match substructure')
+        help='Charge difference tolerance for acceptable match substructure. Default is 0.1.')
 
     parser.add_argument(
         '-a',
         '--atol',
         default=0.1,
         type=float,
-        help='Charge difference tolerance for individual atoms in acceptable match substructure')
+        help='Charge difference tolerance for individual heavy atoms in acceptable match substructure. Default is 0.1.')
 
     parser.add_argument(
-        '-m', '--manual',
-        action='store_true',
-        help='Flag to manually select the desired choice of common element')
+        '-ah',
+        '--ahtol',
+        default=0.1,
+        type=float,
+        help='Charge difference tolerance for individual hydrogen atoms in acceptable match substructure. Default is 0.1.')
 
     parser.add_argument(
         '-r', '--resname',
@@ -117,13 +130,14 @@ def main():
     final_dir = os.path.abspath(args.final)
     final_pdb = os.path.abspath(args.fpdb)
     output_dir = os.path.abspath(args.output)
-    manual = args.manual
     q_tol = args.qtol
     q_atom_tol = args.atol
+    q_hatom_tol = args.ahtol
     align = not args.noalign
     output_resname = args.resname
     delete_old = args.delete_old
     amino = args.amino
+    atom_type = args.atom_type
 
     prepare_output_dir(args.output, delete_old)
 
@@ -137,9 +151,11 @@ def main():
      matched_idx_map,
      selected_submatch) = compare_ligands(initial_dir, initial_pdb,
                                           final_dir, final_pdb,
-                                          output_dir, manual,
+                                          output_dir,
+					  atom_type,
                                           tolerance=q_tol,
                                           atom_tolerance=q_atom_tol,
+					  Hatom_tolerance=q_hatom_tol,
                                           amino=amino)
 
     if args.task == 'all':
@@ -148,7 +164,7 @@ def main():
         # This is propogated to updated PDB, prep and ac files
         update_final_description(final_mol_info, selected_submatch,
                                  initial_atom_info, matched_idx_map,
-                                 output_dir)
+                                 output_dir, atom_type)
 
         common_atom_names = [initial_atom_info[x].name for x in selected_submatch]
 
@@ -159,10 +175,12 @@ def main():
                                          common_atom_names)
 
         # Calculate average charges for common atoms
-        average_charges = calculate_average_charges(initial_atom_info,
-                                                    final_atom_info,
-                                                    selected_submatch,
-                                                    matched_idx_map)
+        (average_charges, del_q_initial, del_q_final) = calculate_average_charges(initial_atom_info,
+                                                    	final_atom_info,
+                                                    	selected_submatch,
+                                                    	matched_idx_map)
+	
+	print("The overall charges of the common region in the initial and final molecules changed by %f and %f, respectively." % (del_q_initial, del_q_final))
 
         # Prepare updated prep files using charge constraints from averages
         # Convert to lib files for easier processing
@@ -172,7 +190,10 @@ def main():
                                                           initial_mol_info,
                                                           initial_atom_info,
                                                           initial_dir,
-                                                          output_dir)
+                                                          output_dir,
+							  del_q_initial,
+						          args.charge,
+							  len(common_atom_names), atom_type)
 
         (final_top_dir,
          final_libname) = update_topology_for_combining(average_charges,
@@ -180,6 +201,9 @@ def main():
                                                         final_atom_info,
                                                         final_dir,
                                                         output_dir,
+							del_q_final,
+							args.charge,
+							len(common_atom_names), atom_type,
                                                         role='final')
 
         # Create combined structure
@@ -205,7 +229,7 @@ def main():
                              hybrid_frcmodname)
 
         # Test hybrid ligand
-        test_hybrid_library(output_dir)
+        test_hybrid_library(output_dir, atom_type)
 
         # Generate disappearing/appearing atom lists
         disappearing_atoms_filename = os.path.join(output_dir,
