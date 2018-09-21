@@ -1,5 +1,5 @@
 import os
-
+import math
 import numpy as np
 from sasmol.sasmol import SasMol
 from rdkit import Chem
@@ -66,10 +66,17 @@ def align_molecules_using_common(align_struct, target_struct,
 
     """
 
-    align_coor, align_com = calc_coor_com(align_struct, common_atom_names)
+    align_coor, align_com = calc_coor_com(align_struct,common_atom_names)
     target_coor, target_com = calc_coor_com(target_struct, common_atom_names)
+    msd = np.sum(np.square(np.subtract(align_coor, target_coor)))
+    rmsd1 = math.sqrt(msd)
 
     align_struct.align(frame, align_coor, align_com, target_coor, target_com)
+
+    align_coor, align_com = calc_coor_com(align_struct,common_atom_names)
+    msd = np.sum(np.square(np.subtract(align_coor, target_coor)))
+    rmsd2 = math.sqrt(msd)
+    print ("NOTE: RMSDs of the selected MCS before and after alignment are %f	%f.\nIf the values too large, consider starting with better agreeing initial structures!!" % (rmsd1, rmsd2))
 
     return
 
@@ -90,21 +97,33 @@ def calculate_average_charges(initial_atom_info, final_atom_info,
 
     Returns:
         list: Average charge of each atom in submatch
+	float: Amount by which the overall charge of the common region 
+		differs after averaging for the initial molecule
+	float: Amount by which the overall charge of the common region 
+		differs after averaging for the final molecule
 
     """
 
     average_charges = {}
+    q_tot_initial = 0
+    q_tot_final = 0
 
     for initial_idx in submatch:
         atom_name = initial_atom_info[initial_idx].name
         final_idx = matched_idx_map[initial_idx]
 
         charge1 = initial_atom_info[initial_idx].charge
+	q_tot_initial += charge1
         charge2 = final_atom_info[final_idx].charge
+	q_tot_final += charge2
 
         average_charges[atom_name] = (charge1 + charge2) / 2.0
 
-    return average_charges
+    q_tot_updated = (q_tot_initial + q_tot_final) / 2.0
+    del_q_initial = q_tot_updated - q_tot_initial    
+    del_q_final = q_tot_updated - q_tot_final    
+
+    return average_charges, del_q_initial, del_q_final
 
 
 def create_combined_structure(initial_struct, final_struct,
@@ -261,7 +280,7 @@ def rename_common_atoms_final(final_struct, initial_submatch_idxs,
 
 
 def update_final_description(final_mol_info, initial_submatch_idxs,
-                             initial_atom_info, idx_map, output_dir):
+                             initial_atom_info, idx_map, output_dir, atom_type):
     """
     Update the files (.pdb, .prep and .ac) describing the final ligand to use
     naming consistent with matched area in the initial molecule.
@@ -274,6 +293,7 @@ def update_final_description(final_mol_info, initial_submatch_idxs,
         initial_atom_info (dict): Atomic charge and naming information by index
         idx_map (dict): Map of initial to final molecule indices
         output_dir (str): Path to store output files
+	atom_type (str): Amber atom type
 
     Returns:
 
@@ -296,7 +316,7 @@ def update_final_description(final_mol_info, initial_submatch_idxs,
     os.chdir(os.path.join(output_dir, 'tmp'))
 
     prepare_param_for_matching(final_mol_info.ac_filename,
-                               renamed_pdb, renamed_ac, renamed_prep)
+                               renamed_pdb, renamed_ac, renamed_prep, atom_type)
 
     os.chdir(cwd)
 
