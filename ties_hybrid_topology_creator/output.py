@@ -4,22 +4,15 @@ import os
 import subprocess
 import sys
 import shutil
+from stat import *
 
-
-def output_submatches_file(submatches, selected,
-                           q_diffs, q_max_atom_diffs,
-                           initial_info, final_info,
+def output_MCS_file(initial_info, final_info,
                            matched_idx_map, output_dir):
     """
     Output a summary file detailing the possible submatches and the atomic
     charge differences between the initial and final molecules
 
     Args:
-        submatches (list): List of lists of atom indices for each submatch
-        selected (int): Index of selected submatch in teh list above
-        q_diffs (list): Overall charge difference for each submatch
-        q_max_atom_diffs (list): Maximum individual atom charge difference
-                                 for each submatch
         initial_info (dict): Naming and connectivity information (AtomInfo)
                              by atom index (initial molecule)
         final_info (dict): Naming and connectivity information (AtomInfo)
@@ -32,31 +25,11 @@ def output_submatches_file(submatches, selected,
 
     """
 
-    out_filename = os.path.join(output_dir, 'original_matches.txt')
+    out_filename = os.path.join(output_dir, 'MCS_details.txt')
 
     out_file = open(out_filename, 'w')
 
-    print('List of all available matches ', file=out_file)
-    print('Uses atom names from initial molecule', file=out_file)
-    print('Atom_Q_diff = maximum difference in selection\n', file=out_file)
-
-    print('#\tQ_diff\tAtom_Q_diff\tMatched atoms', file=out_file)
-
-    for sub_no in range(len(submatches)):
-        match = submatches[sub_no]
-        option = ' '.join(initial_info[x].name for x in match)
-
-        print('{0:d}\t{1:f}\t{2:f}\t{3:s}'.format(sub_no, q_diffs[sub_no],
-                                                  q_max_atom_diffs[sub_no],
-                                                  option),
-              file=out_file)
-
-    print(file=out_file)
-
-    print('Selected: {0:d}'.format(selected), file=out_file)
-
-    print(file=out_file)
-
+    print('Uses atom names from initial molecule\n', file=out_file)
     print('Name_initial\tName_final\tQ_initial\tQ_final\tAtom_Q_diff', file=out_file)
 
     for idx1, idx2 in matched_idx_map.iteritems():
@@ -74,23 +47,27 @@ def output_submatches_file(submatches, selected,
     print('\nNote: Names from initial are used in final output', file=out_file)
 
     print('\nUnmatched atoms from initial:', file=out_file)
-
-    unmatched_idxs = [initial_info[
-        x].name for x in initial_info.keys() if x not in matched_idx_map.keys()]
-    unmatched_txt = ' '.join(unmatched_idxs)
-    print(unmatched_txt, file=out_file)
+    unmatched_idxs = [x for x in initial_info.keys() if x not in matched_idx_map.keys()]
+    print('Name\tQ', file=out_file)
+    for idx in unmatched_idxs:
+        name = initial_info[idx].name
+	charge = initial_info[idx].charge
+        print('{0:s}\t{1:f}'.format(name, charge),
+              file=out_file)
 
     print('\nUnmatched atoms from final:', file=out_file)
-
-    unmatched_idxs = [final_info[x].name for x in final_info.keys(
-    ) if x not in matched_idx_map.keys()]
-    unmatched_txt = ' '.join(unmatched_idxs)
-    print(unmatched_txt, file=out_file)
+    unmatched_idxs = [x for x in final_info.keys(
+    ) if x not in matched_idx_map.values()]
+    print('Name\tQ', file=out_file)
+    for idx in unmatched_idxs:
+        name = final_info[idx].name
+	charge = final_info[idx].charge
+        print('{0:s}\t{1:f}'.format(name, charge),
+              file=out_file)
 
     out_file.close()
 
     return
-
 
 def output_non_common_atom_names(
         structure,
@@ -164,13 +141,14 @@ def output_ties_input_files(structure, common_atom_names,
     return
 
 
-def test_hybrid_library(output_dir):
+def test_hybrid_library(output_dir, atom_type):
     """
     Check that the output library can be used to create a valid amber topology.
     Also convert to prepc format anc heck with parmchk
 
     Args:
         output_dir (str): Path to directory holding output files
+	atom_type (str): AMBER atom type
 
     Returns:
 
@@ -181,7 +159,7 @@ def test_hybrid_library(output_dir):
     os.chdir(output_dir)
 
     test_system_build_template = '''
-source leaprc.gaff
+source leaprc.{0:s}
 frcmod = loadamberparams hybrid.frcmod
 loadoff hybrid.lib
 hybrid = loadpdb hybrid.pdb
@@ -192,10 +170,12 @@ quit
 
 '''
 
+    test_system_build_script = test_system_build_template.format(atom_type)
+
     leap_in_filename = 'test.leapin'
 
     leap_in_file = open(leap_in_filename, 'w')
-    print(test_system_build_template, file=leap_in_file)
+    print(test_system_build_script, file=leap_in_file)
     leap_in_file.close()
 
     output = subprocess.check_output(
@@ -209,19 +189,20 @@ quit
         if "Could not find angle parameter:" in line:
 
             cols = line.split(':')
-            angle = cols[1]
+            angle = cols[-1].strip()
             if angle not in missing_angles:
-                missing_angles.append(cols[1])
+                missing_angles.append(angle)
 
         elif "No torsion terms for" in line:
-            torsion = line[26:-1]
+	    cols = line.split()
+	    torsion = cols[-1].strip()
             if torsion not in missing_dihedrals:
                 missing_dihedrals.append(torsion)
 
     if missing_angles or missing_dihedrals:
 
         print('WARNING: Adding default values for missing dihedral to frcmod')
-        print('WARNING: Okay unless there are atom type changes in match')
+#        print('WARNING: Okay unless there are atom type changes in match')
 
         old_frcmod = open('hybrid.frcmod')
         frcmod_lines = old_frcmod.readlines()
@@ -236,12 +217,14 @@ quit
             if 'ANGLE' in line:
                 for angle in missing_angles:
                     new_frcmod.write(
-                        '{:<13}48.460     120.010   same as ca-ca-ha\n'.format(angle))
+                        '{:<14}0     120.010   same as ca-ca-ha\n'.format(angle))
 
             if 'DIHE' in line:
                 for angle in missing_dihedrals:
                     new_frcmod.write(
-                        '{:<14}1    0.700       180.000           2.000      same as X -c2-ca-X\n'.format(angle))
+                        '{:<14}1    0.00       180.000           2.000      same as X -c2-ca-X\n'.format(angle))
+
+	new_frcmod.close()
 
         returncode = subprocess.call(['tleap', '-s', '-f', leap_in_filename])
 
@@ -253,13 +236,21 @@ quit
 
         print('ERROR: Unable to create test.top, running parmchk')
 
-        returncode = subprocess.call(['parmchk',
+	if atom_type == 'gaff':
+	    at = 1
+	else:
+	    at = 2
+
+        returncode = subprocess.call(['parmchk2',
                                       '-i', 'test.prepc',
-                                      '-f', 'prepc', '-o', 'missing.frcmod'])
+                                      '-f', 'prepc', '-o', 'missing.frcmod', '-s', str(at)])
 
         if returncode:
             print('ERROR: Unable to run parmchk on test.prepc')
             sys.exit(1)
+
+    if os.stat('test.top').st_size == 0:
+        subprocess.call(['tleap', '-s', '-f', 'test.leapin'], stderr=subprocess.STDOUT)    
 
     os.chdir(start_dir)
 
